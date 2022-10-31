@@ -4,10 +4,6 @@
 #include <AFMotor.h>
 #include <Arduino.h>
 
-enum directions{
-    MOVE_FORWARD, MOVE_BACKWARD, MOVE_STOP
-};
-
 const int PWM_PIN = A0;
 const int standStill = 1500; // Controller in middle position
 const int BAUD_RATE = 9600;
@@ -28,8 +24,6 @@ void setup();
 
 int convertSpeed(int speed);
 void setSpeed(int speed);
-
-directions getDir(int pwmValue);
 
 void moveForward();
 void moveBackward();

@@ -5,6 +5,8 @@
 
 #include "main.h"
 
+#define ONE_SECOND_IN_MS 1000
+
 void setup()
 {
    // 115200
@@ -19,7 +21,7 @@ void setup()
 }
 
 /*
-   Calculates the speed all wheels need for the vehicle to drive
+   Calculates the speed all wheels needed for the vehicle to drive
    in a specified direction.
     - forwardSpeed positive forward
     - sidewaysSpeed positive left
@@ -54,7 +56,8 @@ void setSpeedAndDirection(int speed, AF_DCMotor &wheel)
 }
 
 /*
-   Sets the speed of each wheel to the elements of speed_vect
+   Sets the speed of each wheel to the elements of speed_vect.
+   -1 because wheel index starts an 1, not 0.
 */
 void setWheelSpeed(int (&speed_vect)[4])
 {
@@ -107,17 +110,94 @@ void listen(int (&response)[3]){
    }
 }
 
+/*
+   Returns the encoder corresponding to a given wheel.
+*/
+int get_encoder_pin(int wheel){
+   int pin = 0;
+   switch(wheel){
+      case RIGHT_FRONT_WHEEL:
+         //pin = ;
+         break;
+      case LEFT_BACK_WHEEL:
+         //pin = ;
+         break;
+      case RIGHT_BACK_WHEEL:
+         //pin = ;
+         break;
+      default: // LEFT_FRONT_WHEEL
+         //pin = ;
+         break;
+   }
+   return pin;
+}
+
+/*
+Calculates the angular speed of a wheel using the corresponding encoder.
+
+https://www.motioncontroltips.com/how-are-encoders-used-for-speed-measurement/
+ω = 2πn/Nt
+ω = Angular speed
+n = number of pulses
+t = sampling period
+N = pulses per rotation
+*/
+double getAngularSpeed(int wheel){
+   int encoder_pin = 2; //get_encoder_pin(wheel);
+
+   // Count number of pulses in one second
+   int digitalRead_val = 0;
+   int old_digitalRead_val = 0;
+   int n = 0;
+   int start_time = millis(); 
+   while( (millis() - start_time) < (ONE_SECOND_IN_MS)){
+      digitalRead_val = digitalRead(encoder_pin);
+      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
+         n += digitalRead_val;
+      }
+      old_digitalRead_val = digitalRead_val;
+      //delay(10);  
+      // Delay to prevent bouncing, should be short enough to not affect anything else.
+      // Max speed is 240 RPM = 25 rad/s
+      // ω = 2πn/Nt    =>    n = ωNt/2π    =>    n = 80 when ω = 25
+      // 1000 ms / 80 pulses => 1 pulse every 12.5 ms
+   }
+
+   // Calculate speed
+   int t = 1, N = 20;
+   double omega = ( 2 * PI * n ) / ( N * t );
+   return omega;
+}
+
+/*
+   Calculates the RPM of a wheel using the corresponding encoder.
+*/
+int getRPM(int motor){
+   int ang_speed = getAngularSpeed(motor);
+   return 2 * PI * ang_speed / 60;
+}
+
+
 void loop()
 {
-   int response[3];
-   listen(response);
-   runWheels(response[0], response[1], response[2]);
+   //int response[3];
+   //listen(response);
+   //runWheels(response[0], response[1], response[2]);
+   //runWheels(150, 0, 0);
+   //delay(5000);
+   //motorStop();
+   //delay(99999999);
+   //auto encoder_val = digitalRead(2);
+   //Serial.print(encoder_val);
+   //delay(500);
+   double speed = getAngularSpeed(2);
+   Serial.print(speed);
+   Serial.print("\n");
 }
-void motorStop()
-{
+
+void motorStop(){
    LeftFrontWheel.run(RELEASE);
    LeftBackWheel.run(RELEASE);
-
    RightFrontWheel.run(RELEASE);
    RightBackWheel.run(RELEASE);
 }
