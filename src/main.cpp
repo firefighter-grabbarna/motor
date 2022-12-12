@@ -30,8 +30,8 @@ void setup()
 void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4])
 {
    speedVector[LEFT_FRONT_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
-   speedVector[LEFT_BACK_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));   // 2 in coppa // left back
-   speedVector[RIGHT_BACK_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));  // 3 in coppa // right back  ?
+   speedVector[LEFT_BACK_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
+   speedVector[RIGHT_BACK_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));  // 3 in coppa // right back  ?
    speedVector[RIGHT_FRONT_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed - sidewaysSpeed)); // 4 in coppa // right front ?
 }
 
@@ -188,19 +188,18 @@ int getRPM(int motor){
 
 void loop()
 {
-   //int response[3];
-   //listen(response);
-   //runWheels(response[0], response[1], response[2]);
-   runWheels(150, 0, 0);
-   //delay(5000);
-   //motorStop();
-   //delay(99999999);
-   //auto encoder_val = digitalRead(2);
-   //Serial.print(encoder_val);
-   //delay(500);
-   //double speed = getAngularSpeed(2);
-   //Serial.print(speed);
-   //Serial.print("\n");
+   int response[3];
+   listen(response);
+   runWheels(response[0], response[1], response[2]);
+   delay(5000);
+   motorStop();
+   delay(500);
+   auto encoder_val = digitalRead(2);
+   Serial.print(encoder_val);
+   delay(500);
+   // double speed = getAngularSpeed(2);
+   // Serial.print(speed);
+   // Serial.print("\n");
 }
 
 void motorStop(){
