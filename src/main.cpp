@@ -84,6 +84,8 @@ void regulateWheel(int sampleTime, int& speed, int encoder, int K){
    }
    int expectedTicks = 40; // TODO find real value
    int error = K * (ticks - expectedTicks);
+   Serial.print("Ticks: ");
+   Serial.println(ticks);
    Serial.print("Speed before: ");
    Serial.println(speed);
    speed -= error;
