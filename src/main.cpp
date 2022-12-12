@@ -77,6 +77,10 @@ void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
    int speedVector[4];
    getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
    setWheelSpeed(speedVector);
+   for (int i = 0; i < 4; i++){
+      regulateWheel(100, speedVector[i], 0, 1.1);
+   }
+   setWheelSpeed(speedVector);
 }
 
 // Waits for input from serial and then updates response[] with said input
@@ -111,25 +115,23 @@ void listen(int (&response)[3]){
 }
 
 /*
-   Returns the encoder corresponding to a given wheel.
+   sampleTime is in millisecond
 */
-int get_encoder_pin(int wheel){
-   int pin = 0;
-   switch(wheel){
-      case RIGHT_FRONT_WHEEL:
-         //pin = ;
-         break;
-      case LEFT_BACK_WHEEL:
-         //pin = ;
-         break;
-      case RIGHT_BACK_WHEEL:
-         //pin = ;
-         break;
-      default: // LEFT_FRONT_WHEEL
-         //pin = ;
-         break;
+void regulateWheel(int sampleTime, int& speed, int encoder, int K){
+   int digitalRead_val = 0;
+   int old_digitalRead_val = 0;
+   int ticks = 0;
+   unsigned long start_time = millis(); 
+   while((millis() - start_time) < sampleTime){
+      digitalRead_val = digitalRead(encoder);
+      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
+         ticks += digitalRead_val;
+      }
+      old_digitalRead_val = digitalRead_val;
    }
-   return pin;
+   int expectedTicks = 40; // TODO find real value
+   int error = K * (ticks - expectedTicks);
+   speed -= error;
 }
 
 /*
@@ -183,16 +185,16 @@ void loop()
    //int response[3];
    //listen(response);
    //runWheels(response[0], response[1], response[2]);
-   //runWheels(150, 0, 0);
+   runWheels(150, 0, 0);
    //delay(5000);
    //motorStop();
    //delay(99999999);
    //auto encoder_val = digitalRead(2);
    //Serial.print(encoder_val);
    //delay(500);
-   double speed = getAngularSpeed(2);
-   Serial.print(speed);
-   Serial.print("\n");
+   //double speed = getAngularSpeed(2);
+   //Serial.print(speed);
+   //Serial.print("\n");
 }
 
 void motorStop(){
