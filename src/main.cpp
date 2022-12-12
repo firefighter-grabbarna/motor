@@ -220,11 +220,11 @@ void loop(){
    Serial.print("Ticks: ");
    Serial.println(ticks);
    Serial.print("Speed before: ");
-   Serial.println(forwardSpeed);
-   forwardSpeed -= error;
+   Serial.println(speedVector[encoder]);
+   speedVector[encoder] -= error;
    setWheelSpeed(speedVector);
    Serial.print("Speed after: ");
-   Serial.println(forwardSpeed);
+   Serial.println(speedVector[encoder]);
 
 
    //runWheels(response[0], response[1], response[2]);
