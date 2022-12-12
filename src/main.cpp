@@ -185,18 +185,55 @@ int getRPM(int motor){
    return 2 * PI * ang_speed / 60;
 }
 
+int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
+int encoder = -1;
 
-void loop()
-{
+void loop(){
+   int sampleTime = 100;
+   double K = 1.1;
    int response[3];
-   listen(response);
-   runWheels(response[0], response[1], response[2]);
-   delay(5000);
-   motorStop();
-   delay(500);
-   auto encoder_val = digitalRead(2);
-   Serial.print(encoder_val);
-   delay(500);
+   int speedVector[4];
+
+   // PID next wheel
+   encoder = (encoder + 1) % 4;
+
+   if (Serial.available()){
+      listen(response);
+      forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
+      getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
+      setWheelSpeed(speedVector);
+   }
+
+   int digitalRead_val = 0;
+   int old_digitalRead_val = 0;
+   int ticks = 0;
+   unsigned long start_time = millis(); 
+   while((millis() - start_time) < sampleTime){
+      digitalRead_val = digitalRead(encoder);
+      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
+         ticks += digitalRead_val;
+      }
+      old_digitalRead_val = digitalRead_val;
+   }
+   int expectedTicks = 40; // TODO find real value
+   int error = K * (ticks - expectedTicks);
+   Serial.print("Ticks: ");
+   Serial.println(ticks);
+   Serial.print("Speed before: ");
+   Serial.println(forwardSpeed);
+   forwardSpeed -= error;
+   setWheelSpeed(speedVector);
+   Serial.print("Speed after: ");
+   Serial.println(forwardSpeed);
+
+
+   //runWheels(response[0], response[1], response[2]);
+   //delay(5000);
+   //motorStop();
+   //delay(500);
+   //auto encoder_val = digitalRead(2);
+   //Serial.print(encoder_val);
+   //delay(500);
    // double speed = getAngularSpeed(2);
    // Serial.print(speed);
    // Serial.print("\n");
