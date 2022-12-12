@@ -68,6 +68,30 @@ void setWheelSpeed(int (&speed_vect)[4])
 }
 
 /*
+   sampleTime is in millisecond
+*/
+void regulateWheel(int sampleTime, int& speed, int encoder, int K){
+   int digitalRead_val = 0;
+   int old_digitalRead_val = 0;
+   int ticks = 0;
+   unsigned long start_time = millis(); 
+   while((millis() - start_time) < sampleTime){
+      digitalRead_val = digitalRead(encoder);
+      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
+         ticks += digitalRead_val;
+      }
+      old_digitalRead_val = digitalRead_val;
+   }
+   int expectedTicks = 40; // TODO find real value
+   int error = K * (ticks - expectedTicks);
+   Serial.print("Speed before: ");
+   Serial.println(speed);
+   speed -= error;
+   Serial.print("Speed after: ");
+   Serial.println(speed);
+}
+
+/*
    Calculates the speed of each wheel and then runs.
     - forwardSpeed positive forward
     - sidewaysSpeed positive left
@@ -112,26 +136,6 @@ void listen(int (&response)[3]){
       }
       break;
    }
-}
-
-/*
-   sampleTime is in millisecond
-*/
-void regulateWheel(int sampleTime, int& speed, int encoder, int K){
-   int digitalRead_val = 0;
-   int old_digitalRead_val = 0;
-   int ticks = 0;
-   unsigned long start_time = millis(); 
-   while((millis() - start_time) < sampleTime){
-      digitalRead_val = digitalRead(encoder);
-      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
-         ticks += digitalRead_val;
-      }
-      old_digitalRead_val = digitalRead_val;
-   }
-   int expectedTicks = 40; // TODO find real value
-   int error = K * (ticks - expectedTicks);
-   speed -= error;
 }
 
 /*
