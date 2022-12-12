@@ -70,7 +70,7 @@ void setWheelSpeed(int (&speed_vect)[4])
 /*
    sampleTime is in millisecond
 */
-void regulateWheel(int sampleTime, int& speed, int encoder, int K){
+void regulateWheel(unsigned long sampleTime, int& speed, int encoder, int K){
    int digitalRead_val = 0;
    int old_digitalRead_val = 0;
    int ticks = 0;
@@ -189,7 +189,7 @@ int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
 int encoder = -1;
 
 void loop(){
-   int sampleTime = 100;
+   unsigned long sampleTime = 100;
    double K = 1.1;
    int response[3];
    int speedVector[4];
