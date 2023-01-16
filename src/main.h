@@ -16,8 +16,8 @@ const int BAUD_RATE = 9600;
 
 const int RIGHT_FRONT_WHEEL = 1;
 const int LEFT_BACK_WHEEL = 0;
-const int RIGHT_BACK_WHEEL = 3;
-const int LEFT_FRONT_WHEEL = 2;
+const int RIGHT_BACK_WHEEL = 2;
+const int LEFT_FRONT_WHEEL = 3;
 
 const int SPEED_THRESHOLD = 0;
 
