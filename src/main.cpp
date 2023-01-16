@@ -183,13 +183,14 @@ int getRPM(int motor){
 }
 
 int encoder = -1;
+int speedVector[4] = {0, 0, 0, 0};
 
 void loop(){
    int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
    unsigned long sampleTime = 100;
    double K = 1.1;
    int response[3];
-   int speedVector[4];
+   speedVector[4];
 
    // PID next wheel
    encoder = (encoder + 1) % 4;
