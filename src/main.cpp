@@ -222,7 +222,10 @@ void loop(){
    }
    long time1 = micros() - start_time;
    while ((analogRead(getEncoderPin(encoder)) > 500) != digitalRead_val) {
-      if (micros() > start_time + 300000) break;
+      if (micros() > start_time + 300000) {
+         time1 = start_time;
+         break;
+      }
    }
    long time2 = micros() - start_time;
 
