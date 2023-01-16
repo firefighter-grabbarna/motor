@@ -183,12 +183,13 @@ int getRPM(int motor){
 }
 
 int encoder = -1;
+
 int speedVector[4] = {0, 0, 0, 0};
 
 void loop(){
    int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
    unsigned long sampleTime = 100;
-   double K = 1.1;
+   double K = 0.1;
    int response[3];
 
    // PID next wheel
@@ -208,22 +209,26 @@ void loop(){
    while((millis() - start_time) < sampleTime){
       digitalRead_val = digitalRead(encoder);
       if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
-         ticks += digitalRead_val;
+         ticks += 1;
       }
       old_digitalRead_val = digitalRead_val;
    }
    int expectedTicks = speedVector[encoder] * 0.4; // TODO find real value
-   int error = K * (ticks - expectedTicks);
+   int error = -K * (ticks - expectedTicks);
    Serial.print("Wheel: ");
    Serial.println(encoder);
    Serial.print("Ticks: ");
    Serial.println(ticks);
-   Serial.print("Speed before: ");
-   Serial.println(speedVector[encoder]);
+   Serial.println("Speed before: ");
+   for (int i = 0; i < 4; ++i) {
+      Serial.println(speedVector[i]);
+   }
    speedVector[encoder] -= error;
    setWheelSpeed(speedVector);
-   Serial.print("Speed after: ");
-   Serial.println(speedVector[encoder]);
+   Serial.println("Speed after: ");
+   for (int i = 0; i < 4; ++i) {
+      Serial.println(speedVector[i]);
+   }
 
    //runWheels(response[0], response[1], response[2]);
    //delay(5000);
