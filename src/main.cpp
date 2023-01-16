@@ -185,6 +185,7 @@ int getRPM(int motor){
 int encoder = -1;
 
 int speedVector[4] = {0, 0, 0, 0};
+//int targetSpeedVector[4] = {0, 0, 0, 0}
 
 void loop(){
    int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
