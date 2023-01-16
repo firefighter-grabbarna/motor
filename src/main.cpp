@@ -214,23 +214,20 @@ void loop(){
       getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
    }
 
-   int digitalRead_val = 0;
-   int old_digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
+   int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
    long start_time = micros();
-   double ticks_per_second = 0.0;
-   while (true) {
-      if ( (digitalRead_val = analogRead(getEncoderPin(encoder)) > 500) != old_digitalRead_val) {
-         old_digitalRead_val = digitalRead_val;
-         while ((digitalRead_val = analogRead(getEncoderPin(encoder)) > 500) == old_digitalRead_val) {
-         }
-         long end_time = micros();
-         ticks_per_second = 1e6/((float)(end_time-start_time));
-         break;
-      }
-      if ((micros()-start_time) > 300000) {
-         break;
-      }
+
+   while ((analogRead(getEncoderPin(encoder)) > 500) == digitalRead_val) {
+      if (micros() > start_time + 300000) break;
    }
+   long time1 = micros() - start_time;
+   while ((analogRead(getEncoderPin(encoder)) > 500) != digitalRead_val) {
+      if (micros() > start_time + 300000) break;
+   }
+   long time2 = micros() - start_time;
+
+   ticks_per_second = 1e6/((float)(time2-time1));
+
    float expectedTicks = (targetSpeedVector[encoder]);
    int error = K * (ticks_per_second - expectedTicks);
    //Serial.println(ticks_per_second);
