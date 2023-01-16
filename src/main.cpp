@@ -7,6 +7,8 @@
 
 #define ONE_SECOND_IN_MS 1000
 
+double getAngularSpeed(int wheel);
+
 void setup()
 {
    // 115200
@@ -27,8 +29,7 @@ void setup()
     - sidewaysSpeed positive left
     - rotationspeed positive counter-clockwise
 */
-void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4])
-{
+void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4]){
    speedVector[LEFT_FRONT_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
    speedVector[LEFT_BACK_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));   // 2 in coppa // left back
    speedVector[RIGHT_BACK_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));  // 3 in coppa // right back  ?
@@ -74,9 +75,13 @@ void setWheelSpeed(int (&speed_vect)[4])
     - rotationspeed positive counter-clockwise
 */
 void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
-   int speedVector[4];
+   int speedVector[4] = {0, 0, 0, 0};
    getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
-   setWheelSpeed(speedVector);
+   setWheelSpeed(speedVector);   
+   for (int i = 0; i <= 4; i++){
+      // Convert to 0-255 scale
+      speedVector[i] += getAngularSpeed(i);
+   }
 }
 
 // Waits for input from serial and then updates response[] with said input
@@ -149,14 +154,15 @@ double getAngularSpeed(int wheel){
    int digitalRead_val = 0;
    int old_digitalRead_val = 0;
    int n = 0;
+   int t = 0.25, N = 20;
    int start_time = millis(); 
-   while( (millis() - start_time) < (ONE_SECOND_IN_MS)){
+   while( (millis() - start_time) < (ONE_SECOND_IN_MS * t)){
       digitalRead_val = digitalRead(encoder_pin);
       if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
          n += digitalRead_val;
       }
       old_digitalRead_val = digitalRead_val;
-      //delay(10);  
+      delay(10);  
       // Delay to prevent bouncing, should be short enough to not affect anything else.
       // Max speed is 240 RPM = 25 rad/s
       // ω = 2πn/Nt    =>    n = ωNt/2π    =>    n = 80 when ω = 25
@@ -164,7 +170,6 @@ double getAngularSpeed(int wheel){
    }
 
    // Calculate speed
-   int t = 1, N = 20;
    double omega = ( 2 * PI * n ) / ( N * t );
    return omega;
 }
