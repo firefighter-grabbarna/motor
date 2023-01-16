@@ -213,7 +213,7 @@ void loop(){
       }
       old_digitalRead_val = digitalRead_val;
    }
-   int expectedTicks = 40; // TODO find real value
+   int expectedTicks = speedVector[encoder] * 0.4; // TODO find real value
    int error = K * (ticks - expectedTicks);
    Serial.print("Wheel: ");
    Serial.println(encoder);
