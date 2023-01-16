@@ -182,69 +182,60 @@ int getRPM(int motor){
    return 2 * PI * ang_speed / 60;
 }
 
+int getEncoderPin(int id) {
+   if (id == RIGHT_BACK_WHEEL) {
+      return A0;
+   } else if (id == RIGHT_FRONT_WHEEL) {
+      return A1;
+   } else if (id == LEFT_BACK_WHEEL) {
+      return A2;
+   } else if (id == LEFT_FRONT_WHEEL) {
+      return A3;
+   }
+}
+
 int encoder = -1;
 
 int targetSpeedVector[4] = {0, 0, 0, 0};
 int currSpeedVector[4] = {0, 0, 0, 0};
-//int targetSpeedVector[4] = {0, 0, 0, 0}
 
 void loop(){
    int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
-   unsigned long sampleTime = 100;
-   double K = 0.1;
+   double K = 1.0;
    int response[3];
 
    // PID next wheel
    encoder = (encoder + 1) % 4;
+   //encoder = 0;
 
    if (Serial.available()){
       listen(response);
       forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
       getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
-      for (int i = 0; i < 4; i++){
-         currSpeedVector[i] = targetSpeedVector[i];
-      }
-      setWheelSpeed(currSpeedVector);
    }
 
    int digitalRead_val = 0;
-   int old_digitalRead_val = digitalRead(encoder);
-   int ticks = 0;
-   unsigned long start_time = millis(); 
-   while((millis() - start_time) < sampleTime){
-      digitalRead_val = digitalRead(encoder);
-      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
-         ticks += 1;
+   int old_digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
+   long start_time = micros();
+   double ticks_per_second = 0.0;
+   while (true) {
+      if ( (digitalRead_val = analogRead(getEncoderPin(encoder)) > 500) != old_digitalRead_val) {
+         old_digitalRead_val = digitalRead_val;
+         while ((digitalRead_val = analogRead(getEncoderPin(encoder)) > 500) == old_digitalRead_val) {
+         }
+         long end_time = micros();
+         ticks_per_second = 1e6/((float)(end_time-start_time));
+         break;
       }
-      old_digitalRead_val = digitalRead_val;
+      if ((micros()-start_time) > 300000) {
+         break;
+      }
    }
-   int expectedTicks = targetSpeedVector[encoder] * 0.4; // TODO find real value
-   int error = -K * (ticks - expectedTicks);
-   Serial.print("Wheel: ");
-   Serial.println(encoder);
-   Serial.print("Ticks: ");
-   Serial.println(ticks);
-   Serial.println("Speed before: ");
-   for (int i = 0; i < 4; ++i) {
-      Serial.println(currSpeedVector[i]);
-   }
+   float expectedTicks = (targetSpeedVector[encoder]);
+   int error = K * (ticks_per_second - expectedTicks);
+   //Serial.println(ticks_per_second);
    currSpeedVector[encoder] -= error;
    setWheelSpeed(currSpeedVector);
-   Serial.println("Speed after: ");
-   for (int i = 0; i < 4; ++i) {
-      Serial.println(currSpeedVector[i]);
-   }
-
-   //runWheels(response[0], response[1], response[2]);
-   //delay(5000);
-   //motorStop();
-   //delay(500);
-   //auto encoder_val = digitalRead(2);
-   //Serial.print(encoder_val);
-   //delay(500);
-   // double speed = getAngularSpeed(2);
-   // Serial.print(speed);
-   // Serial.print("\n");
 }
 
 void motorStop(){
