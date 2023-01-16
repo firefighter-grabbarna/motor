@@ -184,7 +184,8 @@ int getRPM(int motor){
 
 int encoder = -1;
 
-int speedVector[4] = {0, 0, 0, 0};
+int targetSpeedVector[4] = {0, 0, 0, 0};
+int currSpeedVector[4] = {0, 0, 0, 0};
 //int targetSpeedVector[4] = {0, 0, 0, 0}
 
 void loop(){
@@ -199,8 +200,11 @@ void loop(){
    if (Serial.available()){
       listen(response);
       forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
-      getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
-      setWheelSpeed(speedVector);
+      getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
+      for (int i = 0; i < 4; i++){
+         currSpeedVector[i] = targetSpeedVector[i];
+      }
+      setWheelSpeed(currSpeedVector);
    }
 
    int digitalRead_val = 0;
@@ -214,7 +218,7 @@ void loop(){
       }
       old_digitalRead_val = digitalRead_val;
    }
-   int expectedTicks = speedVector[encoder] * 0.4; // TODO find real value
+   int expectedTicks = targetSpeedVector[encoder] * 0.4; // TODO find real value
    int error = -K * (ticks - expectedTicks);
    Serial.print("Wheel: ");
    Serial.println(encoder);
@@ -222,13 +226,13 @@ void loop(){
    Serial.println(ticks);
    Serial.println("Speed before: ");
    for (int i = 0; i < 4; ++i) {
-      Serial.println(speedVector[i]);
+      Serial.println(currSpeedVector[i]);
    }
-   speedVector[encoder] -= error;
-   setWheelSpeed(speedVector);
+   currSpeedVector[encoder] -= error;
+   setWheelSpeed(currSpeedVector);
    Serial.println("Speed after: ");
    for (int i = 0; i < 4; ++i) {
-      Serial.println(speedVector[i]);
+      Serial.println(currSpeedVector[i]);
    }
 
    //runWheels(response[0], response[1], response[2]);
