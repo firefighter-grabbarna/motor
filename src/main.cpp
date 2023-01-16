@@ -30,10 +30,10 @@ void setup()
     - rotationspeed positive counter-clockwise
 */
 void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4]){
-   speedVector[LEFT_FRONT_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
-   speedVector[LEFT_BACK_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
-   speedVector[RIGHT_BACK_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));  // 3 in coppa // right back  ?
-   speedVector[RIGHT_FRONT_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed - sidewaysSpeed)); // 4 in coppa // right front ?
+   speedVector[LEFT_FRONT_WHEEL] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
+   speedVector[LEFT_BACK_WHEEL] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
+   speedVector[RIGHT_BACK_WHEEL] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));  // 3 in coppa // right back  ?
+   speedVector[RIGHT_FRONT_WHEEL] = min(255, (forwardSpeed - rotationSpeed - sidewaysSpeed)); // 4 in coppa // right front ?
 }
 
 /*
@@ -62,10 +62,10 @@ void setSpeedAndDirection(int speed, AF_DCMotor &wheel)
 */
 void setWheelSpeed(int (&speed_vect)[4])
 {
-   setSpeedAndDirection(speed_vect[LEFT_FRONT_WHEEL - 1], LeftFrontWheel);
-   setSpeedAndDirection(speed_vect[RIGHT_BACK_WHEEL - 1], RightBackWheel);
-   setSpeedAndDirection(speed_vect[RIGHT_FRONT_WHEEL - 1], RightFrontWheel);
-   setSpeedAndDirection(speed_vect[LEFT_BACK_WHEEL - 1], LeftBackWheel);
+   setSpeedAndDirection(speed_vect[LEFT_FRONT_WHEEL], LeftFrontWheel);
+   setSpeedAndDirection(speed_vect[RIGHT_BACK_WHEEL], RightBackWheel);
+   setSpeedAndDirection(speed_vect[RIGHT_FRONT_WHEEL], RightFrontWheel);
+   setSpeedAndDirection(speed_vect[LEFT_BACK_WHEEL], LeftBackWheel);
 }
 
 /*
@@ -190,7 +190,6 @@ void loop(){
    unsigned long sampleTime = 100;
    double K = 1.1;
    int response[3];
-   speedVector[4];
 
    // PID next wheel
    encoder = (encoder + 1) % 4;

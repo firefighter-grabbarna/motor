@@ -14,19 +14,19 @@ const int BAUD_RATE = 9600;
 // const int LEFT_FRONT_WHEEL = 4;
 
 
-const int RIGHT_FRONT_WHEEL = 2;
-const int LEFT_BACK_WHEEL = 1;
-const int RIGHT_BACK_WHEEL = 4;
-const int LEFT_FRONT_WHEEL = 3;
+const int RIGHT_FRONT_WHEEL = 1;
+const int LEFT_BACK_WHEEL = 0;
+const int RIGHT_BACK_WHEEL = 3;
+const int LEFT_FRONT_WHEEL = 2;
 
 const int SPEED_THRESHOLD = 0;
 
 
 // VARFÖR ANVÄNDER DE INTE KONSTANTERNA ??????.
-AF_DCMotor RightFrontWheel(RIGHT_FRONT_WHEEL);
-AF_DCMotor LeftBackWheel(LEFT_BACK_WHEEL);
-AF_DCMotor RightBackWheel(RIGHT_BACK_WHEEL);
-AF_DCMotor LeftFrontWheel(LEFT_FRONT_WHEEL);
+AF_DCMotor RightFrontWheel(RIGHT_FRONT_WHEEL + 1);
+AF_DCMotor LeftBackWheel(LEFT_BACK_WHEEL + 1);
+AF_DCMotor RightBackWheel(RIGHT_BACK_WHEEL + 1);
+AF_DCMotor LeftFrontWheel(LEFT_FRONT_WHEEL + 1);
 
 void setup();
 
