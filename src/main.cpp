@@ -31,8 +31,8 @@ void setup()
 */
 void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4]){
    speedVector[LEFT_FRONT_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
-   speedVector[LEFT_BACK_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));   // 2 in coppa // left back
-   speedVector[RIGHT_BACK_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));  // 3 in coppa // right back  ?
+   speedVector[LEFT_BACK_WHEEL - 1] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
+   speedVector[RIGHT_BACK_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));  // 3 in coppa // right back  ?
    speedVector[RIGHT_FRONT_WHEEL - 1] = min(255, (forwardSpeed - rotationSpeed - sidewaysSpeed)); // 4 in coppa // right front ?
 }
 
@@ -69,6 +69,32 @@ void setWheelSpeed(int (&speed_vect)[4])
 }
 
 /*
+   sampleTime is in millisecond
+*/
+void regulateWheel(unsigned long sampleTime, int& speed, int encoder, int K){
+   int digitalRead_val = 0;
+   int old_digitalRead_val = 0;
+   int ticks = 0;
+   unsigned long start_time = millis(); 
+   while((millis() - start_time) < sampleTime){
+      digitalRead_val = digitalRead(encoder);
+      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
+         ticks += digitalRead_val;
+      }
+      old_digitalRead_val = digitalRead_val;
+   }
+   int expectedTicks = 40; // TODO find real value
+   int error = K * (ticks - expectedTicks);
+   Serial.print("Ticks: ");
+   Serial.println(ticks);
+   Serial.print("Speed before: ");
+   Serial.println(speed);
+   speed -= error;
+   Serial.print("Speed after: ");
+   Serial.println(speed);
+}
+
+/*
    Calculates the speed of each wheel and then runs.
     - forwardSpeed positive forward
     - sidewaysSpeed positive left
@@ -77,11 +103,7 @@ void setWheelSpeed(int (&speed_vect)[4])
 void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
    int speedVector[4] = {0, 0, 0, 0};
    getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
-   setWheelSpeed(speedVector);   
-   for (int i = 0; i <= 4; i++){
-      // Convert to 0-255 scale
-      speedVector[i] += getAngularSpeed(i);
-   }
+   setWheelSpeed(speedVector);
 }
 
 // Waits for input from serial and then updates response[] with said input
@@ -113,28 +135,6 @@ void listen(int (&response)[3]){
       }
       break;
    }
-}
-
-/*
-   Returns the encoder corresponding to a given wheel.
-*/
-int get_encoder_pin(int wheel){
-   int pin = 0;
-   switch(wheel){
-      case RIGHT_FRONT_WHEEL:
-         //pin = ;
-         break;
-      case LEFT_BACK_WHEEL:
-         //pin = ;
-         break;
-      case RIGHT_BACK_WHEEL:
-         //pin = ;
-         break;
-      default: // LEFT_FRONT_WHEEL
-         //pin = ;
-         break;
-   }
-   return pin;
 }
 
 /*
@@ -182,22 +182,57 @@ int getRPM(int motor){
    return 2 * PI * ang_speed / 60;
 }
 
+int encoder = -1;
 
-void loop()
-{
-   //int response[3];
-   //listen(response);
+void loop(){
+   int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
+   unsigned long sampleTime = 100;
+   double K = 1.1;
+   int response[3];
+   int speedVector[4];
+
+   // PID next wheel
+   encoder = (encoder + 1) % 4;
+
+   if (Serial.available()){
+      listen(response);
+      forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
+      getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
+      setWheelSpeed(speedVector);
+   }
+
+   int digitalRead_val = 0;
+   int old_digitalRead_val = 0;
+   int ticks = 0;
+   unsigned long start_time = millis(); 
+   while((millis() - start_time) < sampleTime){
+      digitalRead_val = digitalRead(encoder);
+      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
+         ticks += digitalRead_val;
+      }
+      old_digitalRead_val = digitalRead_val;
+   }
+   int expectedTicks = 40; // TODO find real value
+   int error = K * (ticks - expectedTicks);
+   Serial.print("Ticks: ");
+   Serial.println(ticks);
+   Serial.print("Speed before: ");
+   Serial.println(speedVector[encoder]);
+   speedVector[encoder] -= error;
+   setWheelSpeed(speedVector);
+   Serial.print("Speed after: ");
+   Serial.println(speedVector[encoder]);
+
    //runWheels(response[0], response[1], response[2]);
-   //runWheels(150, 0, 0);
    //delay(5000);
    //motorStop();
-   //delay(99999999);
+   //delay(500);
    //auto encoder_val = digitalRead(2);
    //Serial.print(encoder_val);
    //delay(500);
-   double speed = getAngularSpeed(2);
-   Serial.print(speed);
-   Serial.print("\n");
+   // double speed = getAngularSpeed(2);
+   // Serial.print(speed);
+   // Serial.print("\n");
 }
 
 void motorStop(){
