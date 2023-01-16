@@ -202,7 +202,7 @@ void loop(){
    }
 
    int digitalRead_val = 0;
-   int old_digitalRead_val = 0;
+   int old_digitalRead_val = digitalRead(encoder);
    int ticks = 0;
    unsigned long start_time = millis(); 
    while((millis() - start_time) < sampleTime){
