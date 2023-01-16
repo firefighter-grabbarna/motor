@@ -215,6 +215,8 @@ void loop(){
    }
    int expectedTicks = 40; // TODO find real value
    int error = K * (ticks - expectedTicks);
+   Serial.print("Wheel: ");
+   Serial.println(encoder);
    Serial.print("Ticks: ");
    Serial.println(ticks);
    Serial.print("Speed before: ");
