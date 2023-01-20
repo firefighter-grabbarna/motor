@@ -1,19 +1,21 @@
-// Adafruit Motor shield library
-// copyright Adafruit Industries LLC, 2009
-// this code is public domain, enjoy!
-// Det var en gång, och den var grusad.
+#include <AFMotor.h>
+#include <Arduino.h>
 
-#include "main.h"
+//const int PWM_PIN = A0;
+const int BAUD_RATE = 9600;
 
-#define ONE_SECOND_IN_MS 1000
+const int RIGHT_FRONT_WHEEL = 1;
+const int LEFT_BACK_WHEEL = 0;
+const int RIGHT_BACK_WHEEL = 2;
+const int LEFT_FRONT_WHEEL = 3;
 
-double getAngularSpeed(int wheel);
+AF_DCMotor RightFrontWheel(RIGHT_FRONT_WHEEL + 1);
+AF_DCMotor LeftBackWheel(LEFT_BACK_WHEEL + 1);
+AF_DCMotor RightBackWheel(RIGHT_BACK_WHEEL + 1);
+AF_DCMotor LeftFrontWheel(LEFT_FRONT_WHEEL + 1);
 
-void setup()
-{
-   // 115200
+void setup(){
    Serial.begin(BAUD_RATE);
-   //Serial.println("Motor test!");
 
    // turn on motor dont crash code
    RightBackWheel.run(RELEASE);
@@ -29,7 +31,7 @@ void setup()
     - sidewaysSpeed positive left
     - rotationspeed positive counter-clockwise
 */
-void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4]){
+void calcWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4]){
    speedVector[LEFT_FRONT_WHEEL] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
    speedVector[LEFT_BACK_WHEEL] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
    speedVector[RIGHT_BACK_WHEEL] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));  // 3 in coppa // right back  ?
@@ -37,61 +39,28 @@ void getWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int 
 }
 
 /*
-   Given a speed and a wheel
-   sets the correct direction for the wheel
-
-   A negative speed means backwards
-   A positive speed means fortwads
+   Given a speed and a wheel sets the correct direction for the wheel
+    - A negative speed means backwards
+    - A positive speed means fortwads
 */
-void setSpeedAndDirection(int speed, AF_DCMotor &wheel)
-{
+void setSpeedAndDirection(int speed, AF_DCMotor &wheel){
    wheel.setSpeed(min(255, abs((int)speed)));
-   if (speed >= SPEED_THRESHOLD)
-   {
+   if (speed >= 0){
       wheel.run(FORWARD);
    }
-   else if (speed <= SPEED_THRESHOLD)
-   {
+   else if (speed <= 0){
       wheel.run(BACKWARD);
    }
 }
 
 /*
    Sets the speed of each wheel to the elements of speed_vect.
-   -1 because wheel index starts an 1, not 0.
 */
-void setWheelSpeed(int (&speed_vect)[4])
-{
+void setWheelSpeed(int (&speed_vect)[4]){
    setSpeedAndDirection(speed_vect[LEFT_FRONT_WHEEL], LeftFrontWheel);
    setSpeedAndDirection(speed_vect[RIGHT_BACK_WHEEL], RightBackWheel);
    setSpeedAndDirection(speed_vect[RIGHT_FRONT_WHEEL], RightFrontWheel);
    setSpeedAndDirection(speed_vect[LEFT_BACK_WHEEL], LeftBackWheel);
-}
-
-/*
-   sampleTime is in millisecond
-*/
-void regulateWheel(unsigned long sampleTime, int& speed, int encoder, int K){
-   int digitalRead_val = 0;
-   int old_digitalRead_val = 0;
-   int ticks = 0;
-   unsigned long start_time = millis(); 
-   while((millis() - start_time) < sampleTime){
-      digitalRead_val = digitalRead(encoder);
-      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
-         ticks += digitalRead_val;
-      }
-      old_digitalRead_val = digitalRead_val;
-   }
-   int expectedTicks = 40; // TODO find real value
-   int error = K * (ticks - expectedTicks);
-   Serial.print("Ticks: ");
-   Serial.println(ticks);
-   Serial.print("Speed before: ");
-   Serial.println(speed);
-   speed -= error;
-   Serial.print("Speed after: ");
-   Serial.println(speed);
 }
 
 /*
@@ -102,15 +71,17 @@ void regulateWheel(unsigned long sampleTime, int& speed, int encoder, int K){
 */
 void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
    int speedVector[4] = {0, 0, 0, 0};
-   getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
+   calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, speedVector);
    setWheelSpeed(speedVector);
 }
 
-// Waits for input from serial and then updates response[] with said input
+/*
+   Waits for input from serial and then updates response[] with said input
+*/
 void listen(int (&response)[3]){
    while (true) {
       while(!(Serial.available())){
-         ; // Busy wait mycket effektivt
+         ;
       }
 
       String input = Serial.readStringUntil('\n');
@@ -137,50 +108,6 @@ void listen(int (&response)[3]){
    }
 }
 
-/*
-Calculates the angular speed of a wheel using the corresponding encoder.
-
-https://www.motioncontroltips.com/how-are-encoders-used-for-speed-measurement/
-ω = 2πn/Nt
-ω = Angular speed
-n = number of pulses
-t = sampling period
-N = pulses per rotation
-*/
-double getAngularSpeed(int wheel){
-   int encoder_pin = 2; //get_encoder_pin(wheel);
-
-   // Count number of pulses in one second
-   int digitalRead_val = 0;
-   int old_digitalRead_val = 0;
-   int n = 0;
-   int t = 0.25, N = 20;
-   int start_time = millis(); 
-   while( (millis() - start_time) < (ONE_SECOND_IN_MS * t)){
-      digitalRead_val = digitalRead(encoder_pin);
-      if (digitalRead_val != old_digitalRead_val){ // Only count each gap once
-         n += digitalRead_val;
-      }
-      old_digitalRead_val = digitalRead_val;
-      delay(10);  
-      // Delay to prevent bouncing, should be short enough to not affect anything else.
-      // Max speed is 240 RPM = 25 rad/s
-      // ω = 2πn/Nt    =>    n = ωNt/2π    =>    n = 80 when ω = 25
-      // 1000 ms / 80 pulses => 1 pulse every 12.5 ms
-   }
-
-   // Calculate speed
-   double omega = ( 2 * PI * n ) / ( N * t );
-   return omega;
-}
-
-/*
-   Calculates the RPM of a wheel using the corresponding encoder.
-*/
-int getRPM(int motor){
-   int ang_speed = getAngularSpeed(motor);
-   return 2 * PI * ang_speed / 60;
-}
 
 int getEncoderPin(int id) {
    if (id == RIGHT_BACK_WHEEL) {
@@ -192,16 +119,16 @@ int getEncoderPin(int id) {
    } else if (id == LEFT_FRONT_WHEEL) {
       return A3;
    }
+   return -1;
 }
 
 int encoder = -1;
-
 int targetSpeedVector[4] = {0, 0, 0, 0};
 int currSpeedVector[4] = {0, 0, 0, 0};
 
 void loop(){
    int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
-   double K = 1.0;
+   double Kp = 1.0;
    int response[3];
 
    // PID next wheel
@@ -211,11 +138,11 @@ void loop(){
    if (Serial.available()){
       listen(response);
       forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
-      getWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
+      calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
    }
 
    int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
-   long start_time = micros();
+   unsigned long start_time = micros();
 
    while ((analogRead(getEncoderPin(encoder)) > 500) == digitalRead_val) {
       if (micros() > start_time + 300000) break;
@@ -229,18 +156,11 @@ void loop(){
    }
    long time2 = micros() - start_time;
 
-   ticks_per_second = 1e6/((float)(time2-time1));
+   float ticks_per_second = 1e6/((float)(time2-time1));
 
    float expectedTicks = (targetSpeedVector[encoder]);
-   int error = K * (ticks_per_second - expectedTicks);
+   int error = Kp * (ticks_per_second - expectedTicks);
    //Serial.println(ticks_per_second);
    currSpeedVector[encoder] -= error;
    setWheelSpeed(currSpeedVector);
-}
-
-void motorStop(){
-   LeftFrontWheel.run(RELEASE);
-   LeftBackWheel.run(RELEASE);
-   RightFrontWheel.run(RELEASE);
-   RightBackWheel.run(RELEASE);
 }
