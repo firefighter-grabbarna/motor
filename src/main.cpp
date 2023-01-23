@@ -1,3 +1,4 @@
+
 #include <AFMotor.h>
 #include <Arduino.h>
 
@@ -123,14 +124,17 @@ int getEncoderPin(int id) {
 }
 
 int encoder = -1;
+float totalError = 0;
+float timeSinceLastIter[] = {0, 0, 0, 0};
+//float iterationTime = 0.1;
 int targetSpeedVector[4] = {0, 0, 0, 0};
 int currSpeedVector[4] = {0, 0, 0, 0};
+int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
+double Kp = 0.2;
+double Ki = 0.2;
+int response[3];
 
 void loop(){
-   int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
-   double Kp = 1.0;
-   int response[3];
-
    // PID next wheel
    encoder = (encoder + 1) % 4;
    //encoder = 0;
@@ -138,6 +142,7 @@ void loop(){
    if (Serial.available()){
       listen(response);
       forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
+      totalError = 0;
       calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
    }
 
@@ -156,9 +161,19 @@ void loop(){
    float ticks_per_second = 1e6/((float)(time2-time1));
    if (time2 > 300000) ticks_per_second = 0;
 
+   float lastIter = timeSinceLastIter[encoder];
+   float now = micros();
+   timeSinceLastIter[encoder] = now;
+   float timeSinceLast = now - lastIter;
+
    float expectedTicks = (targetSpeedVector[encoder]);
-   int error = Kp * (ticks_per_second - expectedTicks);
-   //Serial.println(ticks_per_second);
-   currSpeedVector[encoder] -= error;
+   int error = ticks_per_second - expectedTicks;
+   totalError += error * timeSinceLast;
+
+   //Serial.print("=== Encoder: "); Serial.print(encoder); Serial.println(" ===");
+   //Serial.print("Ticks/s: ");
+   Serial.println(ticks_per_second);
+   
+   currSpeedVector[encoder] -= Kp * error + Ki * totalError;
    setWheelSpeed(currSpeedVector);
 }
