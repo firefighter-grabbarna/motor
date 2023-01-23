@@ -149,14 +149,12 @@ void loop(){
    }
    long time1 = micros() - start_time;
    while ((analogRead(getEncoderPin(encoder)) > 500) != digitalRead_val) {
-      if (micros() > start_time + 300000) {
-         time1 = start_time;
-         break;
-      }
+      if (micros() > start_time + 300000) break;
    }
    long time2 = micros() - start_time;
 
    float ticks_per_second = 1e6/((float)(time2-time1));
+   if (time2 > 300000) ticks_per_second = 0;
 
    float expectedTicks = (targetSpeedVector[encoder]);
    int error = Kp * (ticks_per_second - expectedTicks);
