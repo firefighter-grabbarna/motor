@@ -8,6 +8,7 @@ PID::PID() {
     this->current_state = true;
     this->t_last_update = micros();
     this->target_speed = 0.0; 
+    this->tot_err = 0.0;
 }   
 
 
@@ -28,9 +29,14 @@ float PID::update(bool encoder_state) {
     if (ticks_per_second < 1) {
         ticks_per_second = 0;
     }
+    if (this->current_voltage < 0) {
+        ticks_per_second = -ticks_per_second;
+    }
 
     float error = this->target_speed-ticks_per_second;
-    this->current_voltage += error*PID_P*dt;
+
+    this->current_voltage += error*PID_P*dt + this->tot_err*PID_I*dt;
+
     if (this->current_voltage > 240.0) {
         this->current_voltage = 240.0;
     }
@@ -38,16 +44,42 @@ float PID::update(bool encoder_state) {
         this->current_voltage = -240.0;
     }
 
-    // Serial.println("");
-    // Serial.print(this->current_voltage);
-    // Serial.print(" ");
-    // Serial.print(ticks_per_second);
-    // Serial.print(" ");
-    // Serial.println(this->target_speed);
+    if (this->tot_err > 50.0) {
+        this->tot_err = 50.0;
+    }
+    if (this->tot_err < -50.0) {
+        this->tot_err = -50.0;
+    }
+
+    this->tot_err += error*dt;
+    if (abs(this->target_speed) < 1) {
+        this->current_voltage = 0.0;
+    }
+
+    float output_voltage = this->current_voltage;
+    if (abs(this->current_voltage) > 1.0) {
+        if (this-> current_voltage < 0) {
+            output_voltage -= MIN_REQ_VOLTAGE;
+        } else {
+            output_voltage += MIN_REQ_VOLTAGE;
+        }
+    }
+
+    if (output_voltage > 240.0) {
+        output_voltage = 240.0;
+    }
+    if (output_voltage < -240.0) {
+        output_voltage = -240.0;
+    }
     
-    return this->current_voltage;
+
+    return output_voltage;
 }
 
 void PID::set_target_speed(float target_speed) {
     this->target_speed = target_speed;
+}
+
+void PID::reset_integral() {
+    this->tot_err = 0.0;
 }

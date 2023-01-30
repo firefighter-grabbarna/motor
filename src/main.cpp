@@ -140,7 +140,6 @@ PID pids[4] = {PID(), PID(), PID(), PID()};
 void loop(){
    // PID next wheel
    encoder = (encoder + 1) % 4;
-   //encoder = 0;
 
    if (Serial.available()){
       listen(response);
@@ -149,41 +148,12 @@ void loop(){
       calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
       for (int i = 0 ; i < 4; ++i ) {
          pids[i].set_target_speed(targetSpeedVector[i]);
-
+         pids[i].reset_integral();
       }
    }
 
    int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
    currSpeedVector[encoder] = pids[encoder].update(digitalRead_val);
-   // unsigned long start_time = micros();
-
-   // while ((analogRead(getEncoderPin(encoder)) > 500) == digitalRead_val) {
-   //    if (micros() > start_time + 300000) break;
-   // }
-   // long time1 = micros() - start_time;
-   // while ((analogRead(getEncoderPin(encoder)) > 500) != digitalRead_val) {
-   //    if (micros() > start_time + 300000) break;
-   // }
-   // long time2 = micros() - start_time;
-
-   // float ticks_per_second = 1e6/((float)(time2-time1));
-   // if (time2 > 300000) ticks_per_second = 0;
-
-   // float lastIter = timeSinceLastIter[encoder];
-   // float now = micros();
-   // timeSinceLastIter[encoder] = now;
-   // float timeSinceLast = now - lastIter;
-
-   // float expectedTicks = (targetSpeedVector[encoder]);
-   // int error = ticks_per_second - expectedTicks;
-   // totalError += error * timeSinceLast;
-
-   // //Serial.print("=== Encoder: "); Serial.print(encoder); Serial.println(" ===");
-   // //Serial.print("Ticks/s: ");
-   // Serial.println(ticks_per_second);
-   
-   //currSpeedVector[encoder] -= Kp * error + Ki * totalError;
-
    setWheelSpeed(currSpeedVector);
 }
 
