@@ -4,7 +4,7 @@
 #include "pid.hpp"
 
 //const int PWM_PIN = A0;
-const int BAUD_RATE = 9600;
+const unsigned long BAUD_RATE = 115200UL;
 
 const int RIGHT_FRONT_WHEEL = 1;
 const int LEFT_BACK_WHEEL = 0;
@@ -35,9 +35,9 @@ void setup(){
 */
 void calcWheelSpeeds(int forwardSpeed, int sidewaysSpeed, int rotationSpeed, int (&speedVector)[4]){
    speedVector[LEFT_FRONT_WHEEL] = min(255, (forwardSpeed + rotationSpeed + sidewaysSpeed));  // 1 in coppa // left front
-   speedVector[LEFT_BACK_WHEEL] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
+   speedVector[LEFT_BACK_WHEEL] = min(255, (forwardSpeed - rotationSpeed - sidewaysSpeed));   // 2 in coppa // left back
    speedVector[RIGHT_BACK_WHEEL] = min(255, (forwardSpeed - rotationSpeed + sidewaysSpeed));  // 3 in coppa // right back  ?
-   speedVector[RIGHT_FRONT_WHEEL] = min(255, (forwardSpeed - rotationSpeed - sidewaysSpeed)); // 4 in coppa // right front ?
+   speedVector[RIGHT_FRONT_WHEEL] = min(255, (forwardSpeed + rotationSpeed - sidewaysSpeed)); // 4 in coppa // right front ?
 }
 
 /*
@@ -137,9 +137,12 @@ int response[3];
 
 PID pids[4] = {PID(), PID(), PID(), PID()};
 
+unsigned long long last_speed_print = 0;
+
 void loop(){
    // PID next wheel
    encoder = (encoder + 1) % 4;
+
 
    if (Serial.available()){
       listen(response);
