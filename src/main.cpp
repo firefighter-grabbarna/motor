@@ -11,6 +11,8 @@ const int LEFT_BACK_WHEEL = 0;
 const int RIGHT_BACK_WHEEL = 2;
 const int LEFT_FRONT_WHEEL = 3;
 
+unsigned long time_last_ping = 0;
+
 AF_DCMotor RightFrontWheel(RIGHT_FRONT_WHEEL + 1);
 AF_DCMotor LeftBackWheel(LEFT_BACK_WHEEL + 1);
 AF_DCMotor RightBackWheel(RIGHT_BACK_WHEEL + 1);
@@ -24,6 +26,8 @@ void setup(){
    LeftBackWheel.run(RELEASE);
    LeftFrontWheel.run(RELEASE);
    RightFrontWheel.run(RELEASE);
+
+   time_last_ping = micros();
 }
 
 /*
@@ -80,40 +84,44 @@ void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
 /*
    Waits for input from serial and then updates response[] with said input
 */
-void listen(int (&response)[4]){
-   while (true) {
-      while(!(Serial.available())){
-         ;
-      }
-
-      String input = Serial.readStringUntil('\n');
-      String cpy = input;
-      cpy.trim();
-      if (cpy == "SCIP2.0") {
-         Serial.println("MOTOR");
-         Serial.println("");
-         continue;
-      } else if (cpy == "") {
-         continue;
-      }
-      char myArray[input.length() + 1];        //as 1 char space for null is also required
-      strcpy(myArray, input.c_str());    
-   
-      char * token = strtok(myArray, " ");   // Extract the first token
-
-      // loop through the string to extract all other tokens
-      int i = 0;
-      for(; token != NULL && i < 4; i++){
-         response[i] = atoi(token);
-         token = strtok(NULL, " ");
-      }
-
-      // Set default value to slow state if no was sent.
-      if (i < 4) {
-         response[3] = 0; // set to not slow state
-      }
-      break;
+int listen(int (&response)[4]){
+   while(!(Serial.available())){
+      ;
    }
+   // time_last_ping = micros();
+
+   String input = Serial.readStringUntil('\n');
+   String cpy = input;
+   cpy.trim();
+   if (cpy == "SCIP2.0") {
+      Serial.println("MOTOR");
+      Serial.println("");
+      return 0;
+   } else if (cpy == "PING") {
+      time_last_ping = micros();
+      return 0;
+   } else if (cpy == "") {
+      return 0;
+   }
+   time_last_ping = micros();
+
+   char myArray[input.length() + 1];        //as 1 char space for null is also required
+   strcpy(myArray, input.c_str());    
+
+   char * token = strtok(myArray, " ");   // Extract the first token
+
+   // loop through the string to extract all other tokens
+   int i = 0;
+   for(; token != NULL && i < 4; i++){
+      response[i] = atoi(token);
+      token = strtok(NULL, " ");
+   }
+
+   // Set default value to slow state if no was sent.
+   if (i < 4) {
+      response[3] = 0; // set to not slow state
+   }
+   return true;
 }
 
 
@@ -150,18 +158,6 @@ void loop(){
    // PID next wheel
    encoder = (encoder + 1) % 4;
 
-   if (Serial.available()){
-      listen(response);
-      forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
-      is_slow = response[3];
-      totalError = 0;
-      calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
-      for (int i = 0 ; i < 4; ++i ) {
-         pids[i].set_target_speed(targetSpeedVector[i]);
-         pids[i].reset_integral();
-      }
-   }
-
    int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
    if (is_slow == 1) {
       currSpeedVector[encoder] = pids[encoder].update(digitalRead_val, true);
@@ -170,6 +166,35 @@ void loop(){
    }
    // Serial.println(pids[0].tps);
    setWheelSpeed(currSpeedVector);
+
+
+   if (Serial.available()){
+      int r = listen(response);
+      if (r) {
+         Serial.println("update vector");
+
+         forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
+         is_slow = response[3];
+         totalError = 0;
+         calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
+         for (int i = 0 ; i < 4; ++i ) {
+            pids[i].set_target_speed(targetSpeedVector[i]);
+            pids[i].reset_integral();
+         }
+      }
+   } else if (micros() - time_last_ping > 1500000) {
+      Serial.println("reset");
+      is_slow = 0;
+      for (int i = 0; i < 4; ++i) {
+         pids[i].set_target_speed(0);
+         pids[i].reset_integral();
+         // response[i] = 0;
+      }
+      time_last_ping = micros();
+   } else {
+      return;
+   }
+
 }
 
 
