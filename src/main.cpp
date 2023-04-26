@@ -163,8 +163,8 @@ void loop(){
    }
 
    int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
-   if (is_slow) {
-      currSpeedVector[encoder] = pids[encoder].update(digitalRead_val, false);
+   if (is_slow == 1) {
+      currSpeedVector[encoder] = pids[encoder].update(digitalRead_val, true);
    } else {
       currSpeedVector[encoder] = pids[encoder].target_speed * 255.0/35.0;
    }
