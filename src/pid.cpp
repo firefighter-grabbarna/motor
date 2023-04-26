@@ -12,7 +12,12 @@ PID::PID() {
 }   
 
 
-float PID::update(bool encoder_state) {
+float PID::update(bool encoder_state, bool is_slow_state) {
+    float pidp = is_slow_state ? SLOW_P : PID_P;
+    float pidi = is_slow_state ? SLOW_I : PID_I;
+    float threshold = is_slow_state ? SLOW_MIN_REQ_VOLTAGE : MIN_REQ_VOLTAGE;
+
+
     unsigned long now = micros();
     float dt = (1e-6)*(now-this->t_last_update);
     this->t_last_update = now;
@@ -32,10 +37,11 @@ float PID::update(bool encoder_state) {
     if (this->current_voltage < 0) {
         ticks_per_second = -ticks_per_second;
     }
+    this->tps = ticks_per_second;
 
     float error = this->target_speed-ticks_per_second;
 
-    this->current_voltage += error*PID_P*dt + this->tot_err*PID_I*dt;
+    this->current_voltage += error*pidp*dt + this->tot_err*pidi*dt;
 
     if (this->current_voltage > 240.0) {
         this->current_voltage = 240.0;
@@ -59,9 +65,9 @@ float PID::update(bool encoder_state) {
     float output_voltage = this->current_voltage;
     if (abs(this->current_voltage) > 1.0) {
         if (this-> current_voltage < 0) {
-            output_voltage -= MIN_REQ_VOLTAGE;
+            output_voltage -= threshold;
         } else {
-            output_voltage += MIN_REQ_VOLTAGE;
+            output_voltage += threshold;
         }
     }
 

@@ -80,7 +80,7 @@ void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
 /*
    Waits for input from serial and then updates response[] with said input
 */
-void listen(int (&response)[3]){
+void listen(int (&response)[4]){
    while (true) {
       while(!(Serial.available())){
          ;
@@ -102,9 +102,15 @@ void listen(int (&response)[3]){
       char * token = strtok(myArray, " ");   // Extract the first token
 
       // loop through the string to extract all other tokens
-      for(int i = 0; token != NULL; i++){
+      int i = 0;
+      for(; token != NULL && i < 4; i++){
          response[i] = atoi(token);
          token = strtok(NULL, " ");
+      }
+
+      // Set default value to slow state if no was sent.
+      if (i < 4) {
+         response[3] = 0; // set to not slow state
       }
       break;
    }
@@ -133,7 +139,8 @@ int currSpeedVector[4] = {0, 0, 0, 0};
 int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
 double Kp = 0.2;
 double Ki = 0.2;
-int response[3];
+int response[4];
+int is_slow = false;
 
 PID pids[4] = {PID(), PID(), PID(), PID()};
 
@@ -143,10 +150,10 @@ void loop(){
    // PID next wheel
    encoder = (encoder + 1) % 4;
 
-
    if (Serial.available()){
       listen(response);
       forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
+      is_slow = response[3];
       totalError = 0;
       calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
       for (int i = 0 ; i < 4; ++i ) {
@@ -156,7 +163,12 @@ void loop(){
    }
 
    int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
-   currSpeedVector[encoder] = pids[encoder].update(digitalRead_val);
+   if (is_slow) {
+      currSpeedVector[encoder] = pids[encoder].update(digitalRead_val, false);
+   } else {
+      currSpeedVector[encoder] = pids[encoder].target_speed * 255.0/35.0;
+   }
+   // Serial.println(pids[0].tps);
    setWheelSpeed(currSpeedVector);
 }
 
