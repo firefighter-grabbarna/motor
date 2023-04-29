@@ -85,9 +85,9 @@ void runWheels(int forwardSpeed, int sidewaysSpeed, int rotationSpeed){
    Waits for input from serial and then updates response[] with said input
 */
 int listen(int (&response)[4]){
-   while(!(Serial.available())){
-      ;
-   }
+   // while(!(Serial.available())){
+   //    ;
+   // }
    // time_last_ping = micros();
 
    String input = Serial.readStringUntil('\n');
@@ -148,22 +148,24 @@ int forwardSpeed = 0, sidewaysSpeed = 0, rotationSpeed = 0;
 double Kp = 0.2;
 double Ki = 0.2;
 int response[4];
-int is_slow = false;
+// int is_slow = false;
 
-PID pids[4] = {PID(), PID(), PID(), PID()};
+//PID pids[4] = {PID(), PID(), PID(), PID()};
 
 unsigned long long last_speed_print = 0;
 
 void loop(){
    // PID next wheel
-   encoder = (encoder + 1) % 4;
+   //encoder = (encoder + 1) % 4;
 
-   int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
-   if (is_slow == 1) {
-      currSpeedVector[encoder] = pids[encoder].update(digitalRead_val, true);
-   } else {
-      currSpeedVector[encoder] = pids[encoder].target_speed * 255.0/35.0;
-   }
+   //int digitalRead_val = analogRead(getEncoderPin(encoder)) > 500;
+   //currSpeedVector[encoder] = pids[encoder].target_speed * 255.0/35.0;
+
+   // if (is_slow == 1) {
+   //    currSpeedVector[encoder] = pids[encoder].update(digitalRead_val, true);
+   // } else {
+   //    currSpeedVector[encoder] = pids[encoder].target_speed * 255.0/35.0;
+   // }
    // Serial.println(pids[0].tps);
    setWheelSpeed(currSpeedVector);
 
@@ -171,30 +173,31 @@ void loop(){
    if (Serial.available()){
       int r = listen(response);
       if (r) {
-         Serial.println("update vector");
+         // Serial.println("update vector");
 
          forwardSpeed = response[0], sidewaysSpeed = response[1], rotationSpeed = response[2];
-         is_slow = response[3];
+         // is_slow = response[3];
          totalError = 0;
          calcWheelSpeeds(forwardSpeed, sidewaysSpeed, rotationSpeed, targetSpeedVector);
          for (int i = 0 ; i < 4; ++i ) {
-            pids[i].set_target_speed(targetSpeedVector[i]);
-            pids[i].reset_integral();
+            currSpeedVector[i] = targetSpeedVector[i] * 255.0/35.0;
+            //pids[i].set_target_speed(targetSpeedVector[i]);
+            //pids[i].reset_integral();
          }
       }
    } else if (micros() - time_last_ping > 1500000) {
-      Serial.println("reset");
-      is_slow = 0;
+      // Serial.println("reset");
+      // is_slow = 0;
       for (int i = 0; i < 4; ++i) {
-         pids[i].set_target_speed(0);
-         pids[i].reset_integral();
+            currSpeedVector[i] = 0;
+         //pids[i].set_target_speed(0);
+         //pids[i].reset_integral();
          // response[i] = 0;
       }
       time_last_ping = micros();
    } else {
       return;
    }
-
 }
 
 
